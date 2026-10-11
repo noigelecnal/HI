@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BioPod | Chamber Monitor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@380;420;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark" aria-hidden="true">
+          <span class="mark-ring"></span>
+          <span class="mark-core"></span>
+        </div>
+        <div>
+          <p class="eyebrow">Luis Y. Ferrer Jr. SHS · STEM Capstone</p>
+          <h1>BioPod</h1>
+        </div>
+      </div>
+      <p class="tagline">IoT incubator for bacterial culture · ESP32 · 4× DHT22</p>
+      <div class="top-meta">
+        <div class="live-pill" id="livePill">
+          <span class="dot"></span>
+          <span id="liveLabel">Standby</span>
+        </div>
+        <time id="clock">--:--:--</time>
+      </div>
+    </header>
+
+    <section class="status-banner" id="statusBanner">
+      <div>
+        <p class="status-kicker" id="statusKicker">Chamber status</p>
+        <p class="status-copy" id="statusText">No readings yet. Start a live session, run the demo, or add a manual log.</p>
+      </div>
+      <div class="status-actions">
+        <button type="button" class="btn ghost" id="demoBtn">Run demo telemetry</button>
+        <button type="button" class="btn ghost" id="stopDemoBtn" hidden>Stop demo</button>
+        <button type="button" class="btn copper" id="disturbBtn">Mark door disturbance</button>
+      </div>
+    </section>
+
+    <section class="kpi-grid" aria-label="Key performance indicators">
+      <article class="kpi">
+        <p class="kpi-label">Average temperature</p>
+        <p class="kpi-value"><span id="kpiTemp">—</span><small>°C</small></p>
+        <p class="kpi-note" id="kpiTempNote">Setpoint 37.0 ± 0.5</p>
+      </article>
+      <article class="kpi">
+        <p class="kpi-label">Average humidity</p>
+        <p class="kpi-value"><span id="kpiHum">—</span><small>% RH</small></p>
+        <p class="kpi-note" id="kpiHumNote">Setpoint 50 ± 5</p>
+      </article>
+      <article class="kpi">
+        <p class="kpi-label">Chamber uniformity</p>
+        <p class="kpi-value"><span id="kpiUni">—</span><small>°C / %RH</small></p>
+        <p class="kpi-note">Range across four sensor points</p>
+      </article>
+      <article class="kpi">
+        <p class="kpi-label">Logging completeness</p>
+        <p class="kpi-value"><span id="kpiLc">—</span><small>%</small></p>
+        <p class="kpi-note" id="kpiLcNote">30-minute expected slots</p>
+      </article>
+      <article class="kpi">
+        <p class="kpi-label">Alert detection (ADT)</p>
+        <p class="kpi-value"><span id="kpiAdt">—</span><small>s</small></p>
+        <p class="kpi-note">Time from out-of-range to dashboard alert</p>
+      </article>
+      <article class="kpi">
+        <p class="kpi-label">Recovery time (RT)</p>
+        <p class="kpi-value"><span id="kpiRt">—</span><small>s</small></p>
+        <p class="kpi-note" id="kpiRtNote">After last marked disturbance</p>
+      </article>
+    </section>
+
+    <div class="main-grid">
+      <section class="panel chamber-panel">
+        <div class="panel-head">
+          <h2>Chamber map</h2>
+          <p>Four AM2302B points · 35 × 35 × 35 cm</p>
+        </div>
+        <div class="chamber">
+          <div class="chamber-frame">
+            <article class="zone" id="zone1">
+              <span class="zone-id">S1 · Upper left</span>
+              <strong id="z1t">—</strong>
+              <span id="z1h">— % RH</span>
+            </article>
+            <article class="zone" id="zone2">
+              <span class="zone-id">S2 · Upper right</span>
+              <strong id="z2t">—</strong>
+              <span id="z2h">— % RH</span>
+            </article>
+            <article class="zone" id="zone3">
+              <span class="zone-id">S3 · Lower left</span>
+              <strong id="z3t">—</strong>
+              <span id="z3h">— % RH</span>
+            </article>
+            <article class="zone" id="zone4">
+              <span class="zone-id">S4 · Lower right</span>
+              <strong id="z4t">—</strong>
+              <span id="z4h">— % RH</span>
+            </article>
+          </div>
+          <p class="chamber-caption">Color shows in-range (moss) or out-of-band (terracotta) at each point.</p>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Actuators</h2>
+          <p>MOSFET-switched 12 V / 5 V loads</p>
+        </div>
+        <ul class="actuators">
+          <li id="actHeater"><span>PTC heater</span><b>Idle</b></li>
+          <li id="actPeltier"><span>Peltier TEC1-12706</span><b>Idle</b></li>
+          <li id="actFan"><span>5010 blower</span><b>Idle</b></li>
+          <li id="actHum"><span>Ultrasonic atomizer</span><b>Idle</b></li>
+        </ul>
+        <div class="setpoint-box">
+          <h3>Setpoints</h3>
+          <div class="set-row">
+            <label for="tempSetpoint">Temperature (°C)</label>
+            <input type="number" step="0.1" id="tempSetpoint">
+          </div>
+          <div class="set-row">
+            <label for="humSetpoint">Humidity (% RH)</label>
+            <input type="number" step="0.1" id="humSetpoint">
+          </div>
+          <button type="button" class="btn primary" id="applySetpointBtn">Apply setpoints</button>
+          <p class="hint" id="currentSetpoints"></p>
+        </div>
+      </section>
+    </div>
+
+    <div class="main-grid charts-grid">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Temperature over time</h2>
+          <p>Shaded band = ±0.5 °C hysteresis</p>
+        </div>
+        <div class="chart-box">
+          <canvas id="tempChart"></canvas>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Humidity over time</h2>
+          <p>Shaded band = approved RH tolerance</p>
+        </div>
+        <div class="chart-box">
+          <canvas id="humChart"></canvas>
+        </div>
+      </section>
+    </div>
+
+    <div class="main-grid lower-grid">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Alert feed</h2>
+          <p>Dashboard notifications for out-of-range events</p>
+        </div>
+        <ul class="alerts" id="alertList">
+          <li class="empty">No alerts yet.</li>
+        </ul>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Manual log entry</h2>
+          <p>For bench tests when the ESP32 is offline</p>
+        </div>
+        <div class="sensor-head">
+          <span>Point</span>
+          <span>Temp (°C)</span>
+          <span>RH (%)</span>
+        </div>
+        <div class="sensor-row">
+          <label for="temp1">Sensor 1</label>
+          <input type="number" step="0.1" id="temp1" placeholder="36.8">
+          <input type="number" step="0.1" id="hum1" placeholder="50.0">
+        </div>
+        <div class="sensor-row">
+          <label for="temp2">Sensor 2</label>
+          <input type="number" step="0.1" id="temp2">
+          <input type="number" step="0.1" id="hum2">
+        </div>
+        <div class="sensor-row">
+          <label for="temp3">Sensor 3</label>
+          <input type="number" step="0.1" id="temp3">
+          <input type="number" step="0.1" id="hum3">
+        </div>
+        <div class="sensor-row">
+          <label for="temp4">Sensor 4</label>
+          <input type="number" step="0.1" id="temp4">
+          <input type="number" step="0.1" id="hum4">
+        </div>
+        <label class="field-label" for="readingTime">Date and time</label>
+        <input type="datetime-local" id="readingTime">
+        <button type="button" class="btn primary" id="addReadingBtn">Add reading</button>
+      </section>
+    </div>
+
+    <section class="panel log-panel">
+      <div class="log-head">
+        <div>
+          <h2>Timestamped log</h2>
+          <p class="sub">Every sample is stored for the 24–48 h trial and CSV export</p>
+        </div>
+        <div class="actions">
+          <button type="button" class="btn ghost" id="exportBtn">Export CSV</button>
+          <button type="button" class="btn danger" id="clearBtn">Clear all data</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table id="logTable">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>S1 T</th>
+              <th>S2 T</th>
+              <th>S3 T</th>
+              <th>S4 T</th>
+              <th>S1 H</th>
+              <th>S2 H</th>
+              <th>S3 H</th>
+              <th>S4 H</th>
+              <th>Avg T</th>
+              <th>Avg H</th>
+              <th>ΔT</th>
+              <th>ΔH</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="logBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <p class="footnote">
+      BioPod is a student prototype for educational incubation monitoring. It is not a certified laboratory incubator.
+      Serve this folder with <code>python server.py</code> so an ESP32 can POST to <code>/api/reading</code>.
+    </p>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+  <script src="script.js"></script>
+</body>
+</html>

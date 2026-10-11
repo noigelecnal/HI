@@ -1,0 +1,1 @@
+{"id": 1791730555601, "temps": [38.4, 38.2, 38.1, 38.3], "hums": [61, 59, 60, 62], "time": 1791730555606, "actuators": {"heater": false, "peltier": true, "fan": true, "humidifier": false}, "setpoints": null}
