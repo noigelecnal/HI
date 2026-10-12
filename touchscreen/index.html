@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>BioPod | Touchscreen</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@380;420;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="touchscreen.css">
+</head>
+<body>
+  <!-- 480 x 320 landscape screen (4.0-inch ST7796 / ILI9488 class panel, rotated) -->
+  <main class="screen" id="screen">
+
+    <header class="bar">
+      <div class="brand">
+        <span class="mark" aria-hidden="true"><i class="mark-ring"></i><i class="mark-core"></i></span>
+        <span class="brand-name">BioPod</span>
+      </div>
+      <div class="pill" id="pill"><span class="dot"></span><span id="pillText">Standby</span></div>
+      <time id="clock">--:--</time>
+    </header>
+
+    <div class="body">
+
+      <nav class="rail" role="tablist">
+        <button class="tab active" data-view="home" role="tab"><i class="ico ico-home"></i><span>Home</span></button>
+        <button class="tab" data-view="set" role="tab"><i class="ico ico-set"></i><span>Set</span></button>
+        <button class="tab" data-view="status" role="tab"><i class="ico ico-status"></i><span>Status</span></button>
+      </nav>
+
+      <div class="stage">
+
+        <!-- HOME -->
+        <section class="view active" id="view-home">
+          <div class="col left">
+            <div class="banner" id="banner">
+              <p class="kicker" id="bannerKicker">Chamber status</p>
+              <p class="banner-text" id="bannerText">Waiting for readings…</p>
+            </div>
+            <div class="card big">
+              <p class="label">Avg temperature</p>
+              <p class="value"><span id="avgT">—</span><small>°C</small></p>
+              <p class="note" id="noteT">Setpoint 37.0 ± 0.5</p>
+            </div>
+            <div class="card big">
+              <p class="label">Avg humidity</p>
+              <p class="value"><span id="avgH">—</span><small>% RH</small></p>
+              <p class="note" id="noteH">Setpoint 50 ± 5</p>
+            </div>
+          </div>
+
+          <div class="col right">
+            <div class="zones">
+              <article class="zone" id="zone1"><span class="zone-id">S1 · Upper left</span><strong id="z1t">—</strong><span id="z1h">— % RH</span></article>
+              <article class="zone" id="zone2"><span class="zone-id">S2 · Upper right</span><strong id="z2t">—</strong><span id="z2h">— % RH</span></article>
+              <article class="zone" id="zone3"><span class="zone-id">S3 · Lower left</span><strong id="z3t">—</strong><span id="z3h">— % RH</span></article>
+              <article class="zone" id="zone4"><span class="zone-id">S4 · Lower right</span><strong id="z4t">—</strong><span id="z4h">— % RH</span></article>
+            </div>
+            <div class="chips">
+              <span class="chip" id="chipHeater">Heater</span>
+              <span class="chip" id="chipPeltier">Peltier</span>
+              <span class="chip on" id="chipFan">Blower</span>
+              <span class="chip" id="chipHum">Mist</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- SETPOINTS -->
+        <section class="view" id="view-set">
+          <div class="set-grid">
+            <div class="card stepper">
+              <p class="label">Temperature setpoint</p>
+              <p class="value huge"><span id="setT">37.0</span><small>°C</small></p>
+              <div class="step-row">
+                <button class="step" data-target="temp" data-dir="-1" aria-label="Decrease temperature">−</button>
+                <button class="step" data-target="temp" data-dir="1" aria-label="Increase temperature">+</button>
+              </div>
+              <p class="note">Step 0.1 °C · range 25–45</p>
+            </div>
+
+            <div class="card stepper">
+              <p class="label">Humidity setpoint</p>
+              <p class="value huge"><span id="setH">50</span><small>% RH</small></p>
+              <div class="step-row">
+                <button class="step" data-target="hum" data-dir="-1" aria-label="Decrease humidity">−</button>
+                <button class="step" data-target="hum" data-dir="1" aria-label="Increase humidity">+</button>
+              </div>
+              <p class="note">Step 1 % RH · range 20–90</p>
+            </div>
+          </div>
+
+          <div class="set-foot">
+            <p class="hint" id="setHint">Acceptance ±0.5 °C / ±5 % RH · hysteresis ±0.2 °C</p>
+            <div class="action-row">
+              <button class="btn ghost" id="resetBtn">Reset 37 / 50</button>
+              <button class="btn primary" id="applyBtn">Apply setpoints</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- STATUS -->
+        <section class="view" id="view-status">
+          <div class="col left">
+            <ul class="actuators">
+              <li id="actHeater"><span>PTC heater</span><b>Idle</b></li>
+              <li id="actPeltier"><span>Peltier TEC1-12706</span><b>Idle</b></li>
+              <li id="actFan"><span>5010 blower</span><b>Circulating</b></li>
+              <li id="actHum"><span>Ultrasonic atomizer</span><b>Idle</b></li>
+            </ul>
+          </div>
+
+          <div class="col right">
+            <div class="mini-grid">
+              <div class="card mini"><p class="label">Logging</p><p class="value sm"><span id="kLc">—</span><small>%</small></p></div>
+              <div class="card mini"><p class="label">ADT</p><p class="value sm"><span id="kAdt">—</span><small>s</small></p></div>
+              <div class="card mini"><p class="label">RT</p><p class="value sm"><span id="kRt">—</span><small>s</small></p></div>
+            </div>
+            <div class="card alert-card">
+              <p class="label">Latest alert</p>
+              <p class="alert-text" id="alertText">No alerts yet.</p>
+            </div>
+            <button class="btn copper wide" id="disturbBtn">Mark door disturbance</button>
+          </div>
+        </section>
+
+      </div>
+    </div>
+
+    <div class="toast" id="toast" hidden></div>
+  </main>
+
+  <script src="touchscreen.js"></script>
+</body>
+</html>
